@@ -12,9 +12,9 @@ var pudi = function(location) {
         this.artDirector.reCreate();
     };
     this.artDirector.init();
-    requestAnimationFrame(function() {
+    setInterval(function() {
         self.artDirector.animate();
-    });
+    }, 10);
     this.addListeners();
 }
 
@@ -171,7 +171,7 @@ var catcherSet = function(spot, board) {
             this.One.y = this.Two.y = y;
         },
         animate: function() {
-            this.Two.y += 5;
+            this.Two.y = this.Two.y + 20;
             this.One.y = this.Two.y;
         },
         drop: function() {
@@ -233,6 +233,7 @@ var catcherSet = function(spot, board) {
     this.animate = function() {
         this.board.clearRect(0, 0, this.spot.width, this.spot.height);
         this.drawBox();
+        this.dropper.animate();
         this.dropper.drop();
     };
     this.reCreate = function() {
@@ -251,7 +252,7 @@ var catcherSet = function(spot, board) {
         }
         this.drawinnerBox(x, y, height, width);
     };
-    this.drawinnerBox = function(x, y) {
+    this.setDimensions = function() {
         var gap = this.Gap;
 
         var width = (this.dimension.box.width - (gap * 3)) / 2;
@@ -262,29 +263,31 @@ var catcherSet = function(spot, board) {
 
         var diameter = width;
         var triangleSide = diameter / 4;
-        var firstQuadrant = {
-            x: xaxis + (width / 2),
-            y: yaxis + (height / 2)
-        };
-        var secondQuadrant = {
-            x: (xaxis + width + gap) + (width / 2),
-            y: yaxis + (height / 2)
-        };
-        var thirdQuadrant = {
-            x: xaxis + (width / 2),
-            y: (yaxis + height + gap) + (height / 2)
-        };
-        var fourthQuadrant = {
-            x: (xaxis + width + gap) + (width / 2),
-            y: (yaxis + height + gap) + (height / 2)
-        };
-        this.dropper.setdrop(firstQuadrant.x, secondQuadrant.x, this.Gap * 3);
-        this.catcher.setcatcher(firstQuadrant.x, secondQuadrant.x, yaxis);
 
-        this.shapes.drawCircle(firstQuadrant, diameter, this.currentSequence[0].color, this.board);
-        this.shapes.drawCircle(secondQuadrant, diameter, this.currentSequence[1].color, this.board);
-        this.shapes.drawCircle(thirdQuadrant, diameter, this.currentSequence[2].color, this.board);
-        this.shapes.drawCircle(fourthQuadrant, diameter, this.currentSequence[3].color, this.board);
+        this.firstQuadrant = {
+            x: xaxis + (width / 2),
+            y: yaxis + (height / 2)
+        };
+        this.secondQuadrant = {
+            x: (xaxis + width + gap) + (width / 2),
+            y: yaxis + (height / 2)
+        };
+        this.thirdQuadrant = {
+            x: xaxis + (width / 2),
+            y: (yaxis + height + gap) + (height / 2)
+        };
+        this.fourthQuadrant = {
+            x: (xaxis + width + gap) + (width / 2),
+            y: (yaxis + height + gap) + (height / 2)
+        };
+        this.dropper.setdrop(this.firstQuadrant.x, this.secondQuadrant.x, this.Gap * 3);
+        this.catcher.setcatcher(this.firstQuadrant.x, this.secondQuadrant.x, yaxis);
+    };
+    this.drawinnerBox = function(x, y) {
+        this.shapes.drawCircle(this.firstQuadrant, diameter, this.currentSequence[0].color, this.board);
+        this.shapes.drawCircle(this.secondQuadrant, diameter, this.currentSequence[1].color, this.board);
+        this.shapes.drawCircle(this.thirdQuadrant, diameter, this.currentSequence[2].color, this.board);
+        this.shapes.drawCircle(this.fourthQuadrant, diameter, this.currentSequence[3].color, this.board);
 
         this.shapes[this.currentSequence[0].shape](firstQuadrant, triangleSide, this.currentSequence[0].color, this.board);
         this.shapes[this.currentSequence[1].shape](secondQuadrant, triangleSide, this.currentSequence[1].color, this.board);
