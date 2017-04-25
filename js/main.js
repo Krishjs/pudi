@@ -14,7 +14,7 @@ var pudi = function(location) {
     this.artDirector.init();
     setInterval(function() {
         self.artDirector.animate();
-    }, 10);
+    }, 100);
     this.addListeners();
 }
 
@@ -227,6 +227,7 @@ var catcherSet = function(spot, board) {
     this.init = function() {
         this.currentSequence = this.catcher.getSequence();
         this.dropper.dropSequence = this.catcher.getSequence();
+        this.setDimensions();
         this.drawBox();
         this.dropper.drop();
     };
@@ -253,6 +254,14 @@ var catcherSet = function(spot, board) {
         this.drawinnerBox(x, y, height, width);
     };
     this.setDimensions = function() {
+        var x = this.spot.width / 2 - (this.dimension.box.width / 2);
+        var y = this.spot.height - (this.spot.height * 0.30);
+        var height = this.dimension.box.height;
+        var width = this.dimension.box.width;
+        var gap = this.spot.height - y;
+        if (gap < this.dimension.box.height) {
+            y = this.spot.height - this.dimension.box.height - this.Gap;
+        }
         var gap = this.Gap;
 
         var width = (this.dimension.box.width - (gap * 3)) / 2;
@@ -261,8 +270,8 @@ var catcherSet = function(spot, board) {
         var xaxis = x + gap;
         var yaxis = y + gap;
 
-        var diameter = width;
-        var triangleSide = diameter / 4;
+        this.diameter = width;
+        this.triangleSide = this.diameter / 4;
 
         this.firstQuadrant = {
             x: xaxis + (width / 2),
@@ -284,15 +293,15 @@ var catcherSet = function(spot, board) {
         this.catcher.setcatcher(this.firstQuadrant.x, this.secondQuadrant.x, yaxis);
     };
     this.drawinnerBox = function(x, y) {
-        this.shapes.drawCircle(this.firstQuadrant, diameter, this.currentSequence[0].color, this.board);
-        this.shapes.drawCircle(this.secondQuadrant, diameter, this.currentSequence[1].color, this.board);
-        this.shapes.drawCircle(this.thirdQuadrant, diameter, this.currentSequence[2].color, this.board);
-        this.shapes.drawCircle(this.fourthQuadrant, diameter, this.currentSequence[3].color, this.board);
+        this.shapes.drawCircle(this.firstQuadrant, this.diameter, this.currentSequence[0].color, this.board);
+        this.shapes.drawCircle(this.secondQuadrant, this.diameter, this.currentSequence[1].color, this.board);
+        this.shapes.drawCircle(this.thirdQuadrant, this.diameter, this.currentSequence[2].color, this.board);
+        this.shapes.drawCircle(this.fourthQuadrant, this.diameter, this.currentSequence[3].color, this.board);
 
-        this.shapes[this.currentSequence[0].shape](firstQuadrant, triangleSide, this.currentSequence[0].color, this.board);
-        this.shapes[this.currentSequence[1].shape](secondQuadrant, triangleSide, this.currentSequence[1].color, this.board);
-        this.shapes[this.currentSequence[2].shape](thirdQuadrant, triangleSide, this.currentSequence[2].color, this.board);
-        this.shapes[this.currentSequence[3].shape](fourthQuadrant, triangleSide, this.currentSequence[3].color, this.board);
+        this.shapes[this.currentSequence[0].shape](this.firstQuadrant, this.triangleSide, this.currentSequence[0].color, this.board);
+        this.shapes[this.currentSequence[1].shape](this.secondQuadrant, this.triangleSide, this.currentSequence[1].color, this.board);
+        this.shapes[this.currentSequence[2].shape](this.thirdQuadrant, this.triangleSide, this.currentSequence[2].color, this.board);
+        this.shapes[this.currentSequence[3].shape](this.fourthQuadrant, this.triangleSide, this.currentSequence[3].color, this.board);
     };
 }
 
