@@ -1,9 +1,9 @@
 var pudi = function(location) {
+    var self = this;
     this.spot = document.getElementById(location);
     this.board = this.spot.getContext("2d");
     this.artDirector = new art(this.spot, this.board, window);
     this.addListeners = function() {
-        var self = this;
         window.addEventListener('resize', function() { self.resizer(); });
     }
     this.resizer = function() {
@@ -12,12 +12,25 @@ var pudi = function(location) {
         this.artDirector.reCreate();
     };
     this.artDirector.init();
+    requestAnimationFrame(function() {
+        self.artDirector.animate();
+    });
     this.addListeners();
 }
+
 var editor = function(spot, board, frame) {
     var events = [];
-    this.animator = function() {}
-    this.init = function() {}
+    this.animator = function() {
+        events.forEach(function() {
+            fn();
+        });
+    }
+    this.init = function() {
+        var self = this;
+        requestAnimationFrame(function() {
+            self.animator();
+        });
+    }
     this.registerEvent = function(func) {
         events.push(func);
     };
@@ -30,6 +43,9 @@ var starSet = function(spot, board) {
     this.init = function() {
         this.createStars();
         this.paint();
+    };
+    this.animate = function() {
+        this.init();
     };
     this.reCreate = function() {
         this.init();
@@ -54,55 +70,228 @@ var starSet = function(spot, board) {
             this.board.fill();
         }
     };
-}
+};
 var catcherSet = function(spot, board) {
+    var self = this;
     this.spot = spot;
     this.board = board;
+    this.color = ['green', '#57c1eb', '#d5b60a', 'red'];
+    this.shape = ['square', 'traingle', 'cricle', 'squareTilt'];
     this.default = {
         boxGap: 5,
     };
     this.dimension = {
         box: {
-            height: 200,
+            height: 300,
             width: 300
         }
     };
     this.shapes = {
-        circle: function() {},
-        square: function() {},
-        triangle: function() {},
-        squaretilt: function() {}
+        drawSquare: function(point, side, color, brd) {
+            brd.beginPath();
+            brd.rect(point.x - (side / 2), point.y - (side / 2), side, side);
+            brd.strokeStyle = color;
+            brd.lineWidth = 5;
+            brd.stroke();
+        },
+        drawSquareTilt: function(point, side, color, brd) {
+            var sqroot = Math.sqrt(3);
+            var lcorner = {
+                x: point.x - (side / 2),
+                y: point.y
+            };
+            var top = {
+                x: point.x,
+                y: point.y - (side / 2)
+            };
+            var rcorner = {
+                x: point.x + (side / 2),
+                y: point.y
+            };
+            var bottom = {
+                x: point.x,
+                y: point.y + (side / 2)
+            };
+            brd.beginPath();
+            brd.moveTo(lcorner.x, lcorner.y);
+            brd.lineTo(top.x, top.y);
+            brd.lineTo(rcorner.x, rcorner.y);
+            brd.lineTo(bottom.x, bottom.y);
+            brd.closePath();
+            brd.lineWidth = 5;
+            brd.strokeStyle = color;
+            brd.stroke();
+
+        },
+        drawCircle: function(point, diameter, color, brd) {
+            brd.beginPath();
+            brd.arc(point.x, point.y, diameter / 2, 0, 2 * Math.PI, false);
+            brd.strokeStyle = color;
+            brd.lineWidth = 5;
+            brd.stroke();
+        },
+        drawTriangle: function(point, side, color, brd) {
+            var sqroot = Math.sqrt(3);
+            var lcorner = {
+                x: point.x - (side / 2),
+                y: point.y + ((sqroot / 6) * side)
+            };
+            var top = {
+                x: point.x,
+                y: point.y - ((sqroot / 3) * side)
+            };
+            var rcorner = {
+                x: point.x + (side / 2),
+                y: point.y + ((sqroot / 6) * side)
+            };
+            brd.beginPath();
+            brd.moveTo(lcorner.x, lcorner.y);
+            brd.lineTo(top.x, top.y);
+            brd.lineTo(rcorner.x, rcorner.y);
+            brd.closePath();
+            brd.lineWidth = 5;
+            brd.strokeStyle = color;
+            brd.stroke();
+        },
     };
+    this.dropSequence = null;
+    this.currentSequence = null;
+    this.dropper = {
+        One: {
+            x: 0,
+            y: 0
+        },
+        Two: {
+            x: 0,
+            y: 0
+        },
+        setdrop: function(x1, x2, y) {
+            this.One.x = x1;
+            this.Two.x = x2;
+            this.One.y = this.Two.y = y;
+        },
+        animate: function() {
+            this.Two.y += 5;
+            this.One.y = this.Two.y;
+        },
+        drop: function() {
+            var sequence = this.dropSequence;
+            var gap = self.Gap;
+            var width = self.dimension.box.width + gap;
+            var triangleSide = (self.dimension.box.width - self.Gap) / 8;
+            self.shapes[sequence[0].shape](this.One, triangleSide, sequence[0].color, self.board);
+            self.shapes[sequence[1].shape](this.Two, triangleSide, sequence[1].color, self.board);
+        }
+    }
+    this.catcher = {
+        One: {
+            x: 0,
+            y: 0
+        },
+        Two: {
+            x: 0,
+            y: 0
+        },
+        setcatcher: function(x1, x2, y) {
+            this.One.x = x1;
+            this.Two.x = x2;
+            this.One.y = this.Two.y = y;
+        },
+        sequence: [{
+            color: 'green',
+            shape: 'drawSquare'
+        }, {
+            color: '#57c1eb',
+            shape: 'drawSquareTilt'
+        }, {
+            color: '#d5b60a',
+            shape: 'drawCircle'
+        }, {
+            color: 'red',
+            shape: 'drawTriangle'
+        }],
+        //Fisher–Yates Shuffle copied from https://bost.ocks.org/mike/shuffle/
+        getSequence: function() {
+            var m = this.sequence.length,
+                t, i;
+            while (m) {
+                i = Math.floor(Math.random() * m--);
+                t = this.sequence[m];
+                this.sequence[m] = this.sequence[i];
+                this.sequence[i] = t;
+            }
+            return this.sequence;
+        }
+    }
+    this.Gap = 10;
     this.init = function() {
+        this.currentSequence = this.catcher.getSequence();
+        this.dropper.dropSequence = this.catcher.getSequence();
         this.drawBox();
+        this.dropper.drop();
+    };
+    this.animate = function() {
+        this.board.clearRect(0, 0, this.spot.width, this.spot.height);
+        this.drawBox();
+        this.dropper.drop();
     };
     this.reCreate = function() {
-        this.init();
+        this.drawBox();
+        this.dropper.animate();
+        this.dropper.drop();
     };
     this.drawBox = function() {
-        var width = this.spot.height * 0.30;
-        var height = this.spot.height * 0.30;
         var x = this.spot.width / 2 - (this.dimension.box.width / 2);
         var y = this.spot.height - (this.spot.height * 0.30);
-        this.board.strokeStyle = "#FF0000";
-        this.board.strokeRect(x, y, this.dimension.box.width, this.dimension.box.height);
-        this.drawinnerBox(x, y);
-    }
+        var height = this.dimension.box.height;
+        var width = this.dimension.box.width;
+        var gap = this.spot.height - y;
+        if (gap < this.dimension.box.height) {
+            y = this.spot.height - this.dimension.box.height - this.Gap;
+        }
+        this.drawinnerBox(x, y, height, width);
+    };
     this.drawinnerBox = function(x, y) {
-        var width = (this.dimension.box.width - 15) / 2;
-        var height = (this.dimension.box.height - 15) / 2;
-        var xaxis = x + 5;
-        var yaxis = y + 5;
-        this.board.strokeStyle = "green";
-        this.board.strokeRect(xaxis, yaxis, width, height);
-        this.board.strokeStyle = "blue";
-        this.board.strokeRect(xaxis + width + 5, yaxis, width, height);
-        this.board.strokeStyle = "blue";
-        this.board.strokeRect(xaxis, yaxis + height + 5, width, height);
-        this.board.strokeStyle = "green";
-        this.board.strokeRect(xaxis + width + 5, yaxis + height + 5, width, height);
-    }
-};
+        var gap = this.Gap;
+
+        var width = (this.dimension.box.width - (gap * 3)) / 2;
+        var height = (this.dimension.box.height - (gap * 3)) / 2;
+
+        var xaxis = x + gap;
+        var yaxis = y + gap;
+
+        var diameter = width;
+        var triangleSide = diameter / 4;
+        var firstQuadrant = {
+            x: xaxis + (width / 2),
+            y: yaxis + (height / 2)
+        };
+        var secondQuadrant = {
+            x: (xaxis + width + gap) + (width / 2),
+            y: yaxis + (height / 2)
+        };
+        var thirdQuadrant = {
+            x: xaxis + (width / 2),
+            y: (yaxis + height + gap) + (height / 2)
+        };
+        var fourthQuadrant = {
+            x: (xaxis + width + gap) + (width / 2),
+            y: (yaxis + height + gap) + (height / 2)
+        };
+        this.dropper.setdrop(firstQuadrant.x, secondQuadrant.x, this.Gap * 3);
+        this.catcher.setcatcher(firstQuadrant.x, secondQuadrant.x, yaxis);
+
+        this.shapes.drawCircle(firstQuadrant, diameter, this.currentSequence[0].color, this.board);
+        this.shapes.drawCircle(secondQuadrant, diameter, this.currentSequence[1].color, this.board);
+        this.shapes.drawCircle(thirdQuadrant, diameter, this.currentSequence[2].color, this.board);
+        this.shapes.drawCircle(fourthQuadrant, diameter, this.currentSequence[3].color, this.board);
+
+        this.shapes[this.currentSequence[0].shape](firstQuadrant, triangleSide, this.currentSequence[0].color, this.board);
+        this.shapes[this.currentSequence[1].shape](secondQuadrant, triangleSide, this.currentSequence[1].color, this.board);
+        this.shapes[this.currentSequence[2].shape](thirdQuadrant, triangleSide, this.currentSequence[2].color, this.board);
+        this.shapes[this.currentSequence[3].shape](fourthQuadrant, triangleSide, this.currentSequence[3].color, this.board);
+    };
+}
 
 var art = function(spot, board, frame) {
     var sets = [];
@@ -122,13 +311,18 @@ var art = function(spot, board, frame) {
         this.showSet(catcherset);
         sets.push(starartset);
         sets.push(catcherset);
-    }
+    };
     this.reCreate = function() {
         sets.forEach(function(set) {
             set.reCreate();
         });
-    }
+    };
+    this.animate = function() {
+        sets.forEach(function(set) {
+            set.animate();
+        });
+    };
     this.showSet = function(set) {
         set.init();
     };
-}
+};
